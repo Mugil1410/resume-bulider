@@ -1,0 +1,157 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+// Local file URL is only used by the Prisma CLI to generate SQL (migrate diff).
+// At runtime the app connects to Turso through the libSQL driver adapter (src/lib/db.ts).
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Resume {
+  id         String   @id @default(cuid())
+  name       String
+  themeColor String?
+  sectionOrder String  @default("[]") // JSON array of section keys, controls order/visibility
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  personal       ResumePersonalDetail?
+  summary        ResumeSummary?
+  experiences    ResumeExperience[]
+  education      ResumeEducation[]
+  skills         ResumeSkill[]
+  projects       ResumeProject[]
+  certifications ResumeCertification[]
+  additional     ResumeAdditionalSection[]
+
+  @@index([updatedAt])
+  @@map("resumes")
+}
+
+model ResumePersonalDetail {
+  id        String  @id @default(cuid())
+  resumeId  String  @unique
+  fullName  String  @default("")
+  title     String  @default("")
+  email     String  @default("")
+  phone     String  @default("")
+  location  String  @default("")
+  linkedin  String  @default("")
+  github    String  @default("")
+  portfolio String  @default("")
+  photoUrl  String? // small data URL, optional
+
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@map("resume_personal_details")
+}
+
+model ResumeSummary {
+  id       String @id @default(cuid())
+  resumeId String @unique
+  content  String @default("")
+
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@map("resume_summaries")
+}
+
+model ResumeExperience {
+  id             String  @id @default(cuid())
+  resumeId       String
+  position       Int     @default(0)
+  company        String  @default("")
+  jobTitle       String  @default("")
+  employmentType String  @default("")
+  location       String  @default("")
+  startDate      String  @default("") // free text / YYYY-MM
+  endDate        String  @default("")
+  isCurrent      Boolean @default(false)
+  responsibilities String @default("[]") // JSON string[]
+  achievements   String  @default("[]") // JSON string[]
+
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@index([resumeId, position])
+  @@map("resume_experiences")
+}
+
+model ResumeEducation {
+  id          String @id @default(cuid())
+  resumeId    String
+  position    Int    @default(0)
+  degree      String @default("")
+  institution String @default("")
+  location    String @default("")
+  startDate   String @default("")
+  endDate     String @default("")
+  description String @default("")
+
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@index([resumeId, position])
+  @@map("resume_education")
+}
+
+model ResumeSkill {
+  id          String @id @default(cuid())
+  resumeId    String
+  position    Int    @default(0)
+  name        String @default("")
+  category    String @default("")
+  proficiency String @default("")
+
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@index([resumeId, position])
+  @@map("resume_skills")
+}
+
+model ResumeProject {
+  id           String @id @default(cuid())
+  resumeId     String
+  position     Int    @default(0)
+  name         String @default("")
+  technologies String @default("")
+  description  String @default("")
+  url          String @default("")
+  githubUrl    String @default("")
+
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@index([resumeId, position])
+  @@map("resume_projects")
+}
+
+model ResumeCertification {
+  id       String @id @default(cuid())
+  resumeId String
+  position Int    @default(0)
+  name     String @default("")
+  issuer   String @default("")
+  date     String @default("")
+  url      String @default("")
+
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@index([resumeId, position])
+  @@map("resume_certifications")
+}
+
+// Achievements, Languages, Awards, Volunteer, Publications, Hobbies and Custom sections.
+model ResumeAdditionalSection {
+  id       String @id @default(cuid())
+  resumeId String
+  position Int    @default(0)
+  kind     String @default("custom") // achievements|languages|awards|volunteer|publications|hobbies|custom
+  title    String @default("")
+  items    String @default("[]") // JSON string[]
+
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@index([resumeId, position])
+  @@map("resume_additional_sections")
+}
